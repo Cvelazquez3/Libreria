@@ -1,0 +1,56 @@
+﻿@page "/librosform/{Id:int?}"
+@rendermode InteractiveServer
+@inject IRepositorioLibros _repositorioLibros
+@inject NavigationManager _navigationManager
+@using Libreria.Data
+
+<PageTitle>Formulario Libro</PageTitle>
+
+<h3>@(libro.Id == 0 ? "Agregar Libro" : "Editar Libro")</h3>
+
+<EditForm Model="libro" OnValidSubmit="Guardar">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="mb-3">
+        <label>Título</label>
+        <InputText class="form-control" @bind-Value="libro.Titulo" />
+    </div>
+    <div class="mb-3">
+        <label>Autor</label>
+        <InputText class="form-control" @bind-Value="libro.Autor" />
+    </div>
+    <div class="mb-3">
+        <label>Precio</label>
+        <InputNumber class="form-control" @bind-Value="libro.Precio" />
+    </div>
+
+    <button class="btn btn-success">Guardar</button>
+    <button class="btn btn-secondary" @onclick="Volver">Cancelar</button>
+</EditForm>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+    Libro libro = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id.HasValue)
+        {
+            var encontrado = await _repositorioLibros.ObtenerPorIdAsync(Id.Value);
+            if (encontrado != null)
+                libro = encontrado;
+        }
+    }
+
+    async Task Guardar()
+    {
+        if (libro.Id == 0)
+            await _repositorioLibros.AgregarAsync(libro);
+        else
+            await _repositorioLibros.ActualizarAsync(libro);
+
+        Volver();
+    }
+
+    void Volver() => _navigationManager.NavigateTo("/libros");
+}

@@ -1,0 +1,53 @@
+﻿@page "/clientesform/{Id:int?}"
+@rendermode InteractiveServer
+@inject IRepositorioClientes _repositorioClientes
+@inject NavigationManager _navigationManager
+@using Libreria.Data
+@using Microsoft.AspNetCore.Components.Forms
+
+<PageTitle>Formulario Cliente</PageTitle>
+
+<h3>@(cliente.Id == 0 ? "Agregar Cliente" : "Editar Cliente")</h3>
+
+<EditForm Model="cliente" OnValidSubmit="Guardar">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="mb-3">
+        <label>Nombre</label>
+        <InputText class="form-control" @bind-Value="cliente.Nombre" />
+    </div>
+    <div class="mb-3">
+        <label>Email</label>
+        <InputText class="form-control" @bind-Value="cliente.Email" />
+    </div>
+
+    <button class="btn btn-success">Guardar</button>
+    <button class="btn btn-secondary" @onclick="Volver">Cancelar</button>
+</EditForm>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+    Cliente cliente = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id.HasValue)
+        {
+            var encontrado = await _repositorioClientes.ObtenerPorIdAsync(Id.Value);
+            if (encontrado != null)
+                cliente = encontrado;
+        }
+    }
+
+    async Task Guardar()
+    {
+        if (cliente.Id == 0)
+            await _repositorioClientes.AgregarAsync(cliente);
+        else
+            await _repositorioClientes.ActualizarAsync(cliente);
+
+        Volver();
+    }
+
+    void Volver() => _navigationManager.NavigateTo("/clientes");
+}

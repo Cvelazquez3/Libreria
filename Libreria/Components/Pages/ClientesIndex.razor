@@ -1,0 +1,65 @@
+﻿@page "/clientes"
+@rendermode InteractiveServer
+@inject IRepositorioClientes _repositorioClientes
+@inject NavigationManager _navigationManager
+
+<PageTitle>Clientes</PageTitle>
+
+<h3>Clientes</h3>
+
+<a class="btn btn-primary mb-3" href="/clientesform">Agregar Cliente</a>
+
+@if (_clientes == null)
+{
+    <p><em>Cargando...</em></p>
+}
+else if (_clientes.Count > 0)
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in _clientes)
+            {
+                <tr>
+                    <td>@c.Nombre</td>
+                    <td>@c.Email</td>
+                    <td>
+                        <button class="btn btn-outline-primary me-2" @onclick="() => Editar(c.Id)">
+                            ✏️
+                        </button>
+                        <button class="btn btn-outline-danger" @onclick="() => Eliminar(c.Id)">
+                            🗑️
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p><em>No hay clientes registrados.</em></p>
+}
+
+@code {
+    private List<Cliente>? _clientes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _clientes = (await _repositorioClientes.ObtenerTodosAsync()).ToList();
+    }
+
+    private void Editar(int id) => _navigationManager.NavigateTo($"/clientesform/{id}");
+
+    private async Task Eliminar(int id)
+    {
+        await _repositorioClientes.EliminarAsync(id);
+        _clientes = (await _repositorioClientes.ObtenerTodosAsync()).ToList();
+    }
+}

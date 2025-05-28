@@ -1,0 +1,82 @@
+﻿@page "/ventasform/{Id:int?}"
+@rendermode InteractiveServer
+@inject IRepositorioVentas _repositorioVentas
+@inject IRepositorioClientes _repositorioClientes
+@inject IRepositorioLibros _repositorioLibros
+@inject NavigationManager _navigationManager
+
+<PageTitle>Formulario Venta</PageTitle>
+
+<h3>@(venta.Id == 0 ? "Registrar Venta" : "Editar Venta")</h3>
+
+<EditForm Model="venta" OnValidSubmit="Guardar">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label>Cliente</label>
+        <InputSelect class="form-control" @bind-Value="venta.ClienteId">
+            <option value="">Seleccione un cliente</option>
+            @foreach (var c in clientes)
+            {
+                <option value="@c.Id">@c.Nombre</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="mb-3">
+        <label>Libro</label>
+        <InputSelect class="form-control" @bind-Value="venta.LibroId">
+            <option value="">Seleccione un libro</option>
+            @foreach (var l in libros)
+            {
+                <option value="@l.Id">@l.Titulo</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="mb-3">
+        <label>Fecha</label>
+        <InputDate class="form-control" @bind-Value="venta.Fecha" />
+    </div>
+
+    <button class="btn btn-success">Guardar</button>
+    <button class="btn btn-secondary" @onclick="Volver">Cancelar</button>
+</EditForm>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    Venta venta = new();
+    List<Cliente> clientes = new();
+    List<Libro> libros = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        clientes = (await _repositorioClientes.ObtenerTodosAsync()).ToList();
+        libros = (await _repositorioLibros.ObtenerTodosAsync()).ToList();
+
+        if (Id.HasValue)
+        {
+            var encontrado = await _repositorioVentas.ObtenerPorIdAsync(Id.Value);
+            if (encontrado != null)
+                venta = encontrado;
+        }
+        else
+        {
+            venta.Fecha = DateTime.Now;
+        }
+    }
+
+    async Task Guardar()
+    {
+        if (venta.Id == 0)
+            await _repositorioVentas.AgregarAsync(venta);
+        else
+            await _repositorioVentas.ActualizarAsync(venta);
+
+        Volver();
+    }
+
+    void Volver() => _navigationManager.NavigateTo("/ventas");
+}

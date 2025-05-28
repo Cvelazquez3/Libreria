@@ -1,0 +1,63 @@
+﻿@page "/libros"
+@rendermode InteractiveServer
+@inject IRepositorioLibros _repositorioLibros
+@inject NavigationManager _navigationManager
+
+<PageTitle>Libros</PageTitle>
+
+<h3>Libros</h3>
+
+<a class="btn btn-primary mb-3" href="/librosform">Agregar Libro</a>
+
+@if (_libros == null)
+{
+    <p><em>Cargando...</em></p>
+}
+else if (_libros.Count > 0)
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Título</th>
+                <th>Autor</th>
+                <th>Precio</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var libro in _libros)
+            {
+                <tr>
+                    <td>@libro.Titulo</td>
+                    <td>@libro.Autor</td>
+                    <td>@libro.Precio.ToString("C")</td>
+                    <td>
+                        <button class="btn btn-outline-primary me-2" @onclick="() => Editar(libro.Id)">✏️</button>
+                        <button class="btn btn-outline-danger" @onclick="() => Eliminar(libro.Id)">🗑️</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p><em>No hay libros registrados.</em></p>
+}
+
+@code {
+    private List<Libro>? _libros;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _libros = (await _repositorioLibros.ObtenerTodosAsync()).ToList();
+    }
+
+    void Editar(int id) => _navigationManager.NavigateTo($"/librosform/{id}");
+
+    async Task Eliminar(int id)
+    {
+        await _repositorioLibros.EliminarAsync(id);
+        _libros = (await _repositorioLibros.ObtenerTodosAsync()).ToList();
+    }
+}
