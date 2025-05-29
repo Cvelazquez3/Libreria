@@ -5,61 +5,81 @@
 
 <PageTitle>Clientes</PageTitle>
 
-<h3>Clientes</h3>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-lg">
+                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Clientes</h4>
+                    <a class="btn btn-light" href="/clientesform">➕ Nuevo Cliente</a>
+                </div>
 
-<a class="btn btn-primary mb-3" href="/clientesform">Agregar Cliente</a>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="alert alert-danger">@error</div>
+                    }
 
-@if (_clientes == null)
-{
-    <p><em>Cargando...</em></p>
-}
-else if (_clientes.Count > 0)
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Nombre</th>
-                <th>Email</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var c in _clientes)
-            {
-                <tr>
-                    <td>@c.Nombre</td>
-                    <td>@c.Email</td>
-                    <td>
-                        <button class="btn btn-outline-primary me-2" @onclick="() => Editar(c.Id)">
-                            ✏️
-                        </button>
-                        <button class="btn btn-outline-danger" @onclick="() => Eliminar(c.Id)">
-                            🗑️
-                        </button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-else
-{
-    <p><em>No hay clientes registrados.</em></p>
-}
+                    @if (clientes == null)
+                    {
+                        <p><em>Cargando...</em></p>
+                    }
+                    else if (clientes.Count == 0)
+                    {
+                        <p><em>No hay clientes registrados.</em></p>
+                    }
+                    else
+                    {
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Email</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var c in clientes)
+                                {
+                                    <tr>
+                                        <td>@c.Nombre</td>
+                                        <td>@c.Email</td>
+                                        <td>
+                                            <button class="btn btn-outline-primary me-2" @onclick="() => Editar(c.Id)">✏️</button>
+                                            <button class="btn btn-outline-danger" @onclick="() => Eliminar(c.Id)">🗑️</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
-    private List<Cliente>? _clientes;
+    List<Cliente> clientes = new();
+    string error = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        _clientes = (await _repositorioClientes.ObtenerTodosAsync()).ToList();
+        clientes = (await _repositorioClientes.ObtenerTodosAsync()).ToList();
     }
 
-    private void Editar(int id) => _navigationManager.NavigateTo($"/clientesform/{id}");
+    void Editar(int id) => _navigationManager.NavigateTo($"/clientesform/{id}");
 
-    private async Task Eliminar(int id)
+    async Task Eliminar(int id)
     {
-        await _repositorioClientes.EliminarAsync(id);
-        _clientes = (await _repositorioClientes.ObtenerTodosAsync()).ToList();
+        try
+        {
+            await _repositorioClientes.EliminarAsync(id);
+            clientes = (await _repositorioClientes.ObtenerTodosAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
     }
 }

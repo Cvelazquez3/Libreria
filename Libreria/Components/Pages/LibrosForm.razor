@@ -1,42 +1,69 @@
 ﻿@page "/librosform/{Id:int?}"
 @rendermode InteractiveServer
-@inject IRepositorioLibros _repositorioLibros
-@inject NavigationManager _navigationManager
-@using Libreria.Data
+@inject IRepositorioLibros RepositorioLibros
+@inject NavigationManager Navigation
 
 <PageTitle>Formulario Libro</PageTitle>
 
-<h3>@(libro.Id == 0 ? "Agregar Libro" : "Editar Libro")</h3>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">@((libro.Id == 0) ? "Agregar Libro" : "Editar Libro")</h4>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="alert alert-danger">@error</div>
+                    }
 
-<EditForm Model="libro" OnValidSubmit="Guardar">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-    <div class="mb-3">
-        <label>Título</label>
-        <InputText class="form-control" @bind-Value="libro.Titulo" />
-    </div>
-    <div class="mb-3">
-        <label>Autor</label>
-        <InputText class="form-control" @bind-Value="libro.Autor" />
-    </div>
-    <div class="mb-3">
-        <label>Precio</label>
-        <InputNumber class="form-control" @bind-Value="libro.Precio" />
-    </div>
+                    <EditForm Model="libro" OnValidSubmit="Guardar">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
 
-    <button class="btn btn-success">Guardar</button>
-    <button class="btn btn-secondary" @onclick="Volver">Cancelar</button>
-</EditForm>
+                        <div class="mb-3">
+                            <label class="form-label">Título</label>
+                            <InputText class="form-control" @bind-Value="libro.Titulo" placeholder="Ej: Cien años de soledad" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Autor</label>
+                            <InputText class="form-control" @bind-Value="libro.Autor" placeholder="Ej: Gabriel García Márquez" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Precio</label>
+                            <InputNumber class="form-control" @bind-Value="libro.Precio" placeholder="Ej: 299.99" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Cantidad</label>
+                            <InputNumber class="form-control" @bind-Value="libro.Cantidad" placeholder="Ej: 5" />
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button class="btn btn-success" type="submit">Guardar</button>
+                            <button class="btn btn-secondary" type="button" @onclick="Volver">Cancelar</button>
+                        </div>
+                    </EditForm>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
     [Parameter] public int? Id { get; set; }
     Libro libro = new();
+    string error = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
         if (Id.HasValue)
         {
-            var encontrado = await _repositorioLibros.ObtenerPorIdAsync(Id.Value);
+            var encontrado = await RepositorioLibros.ObtenerPorIdAsync(Id.Value);
             if (encontrado != null)
                 libro = encontrado;
         }
@@ -44,13 +71,20 @@
 
     async Task Guardar()
     {
-        if (libro.Id == 0)
-            await _repositorioLibros.AgregarAsync(libro);
-        else
-            await _repositorioLibros.ActualizarAsync(libro);
+        try
+        {
+            if (libro.Id == 0)
+                await RepositorioLibros.AgregarAsync(libro);
+            else
+                await RepositorioLibros.ActualizarAsync(libro);
 
-        Volver();
+            Volver();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
     }
 
-    void Volver() => _navigationManager.NavigateTo("/libros");
+    void Volver() => Navigation.NavigateTo("/libros");
 }

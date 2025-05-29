@@ -1,63 +1,97 @@
 ﻿@page "/ventas"
 @rendermode InteractiveServer
 @inject IRepositorioVentas _repositorioVentas
+@inject IRepositorioLibros _repositorioLibros
+@inject IRepositorioClientes _repositorioClientes
 @inject NavigationManager _navigationManager
 
 <PageTitle>Ventas</PageTitle>
 
-<h3>Ventas</h3>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-lg">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Ventas realizadas</h4>
+                    <a class="btn btn-light" href="/ventasform">➕ Nueva Venta</a>
+                </div>
 
-<a class="btn btn-primary mb-3" href="/ventasform">Registrar Venta</a>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="alert alert-danger">@error</div>
+                    }
 
-@if (_ventas == null)
-{
-    <p><em>Cargando...</em></p>
-}
-else if (_ventas.Count > 0)
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Cliente</th>
-                <th>Libro</th>
-                <th>Fecha</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var venta in _ventas)
-            {
-                <tr>
-                    <td>@venta.Cliente?.Nombre</td>
-                    <td>@venta.Libro?.Titulo</td>
-                    <td>@venta.Fecha.ToShortDateString()</td>
-                    <td>
-                        <button class="btn btn-outline-primary me-2" @onclick="() => Editar(venta.Id)">✏️</button>
-                        <button class="btn btn-outline-danger" @onclick="() => Eliminar(venta.Id)">🗑️</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-else
-{
-    <p><em>No hay ventas registradas.</em></p>
-}
+                    @if (ventas == null || ventas.Count == 0)
+                    {
+                        <p><em>No hay ventas registradas.</em></p>
+                    }
+                    else
+                    {
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Libro</th>
+                                    <th>Fecha</th>
+                                    <th>Cantidad</th>
+                                    <th>Precio Unitario</th>
+                                    <th>Total</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var v in ventas)
+                                {
+                                    var libro = libros.FirstOrDefault(l => l.Id == v.LibroId);
+                                    var cliente = clientes.FirstOrDefault(c => c.Id == v.ClienteId);
+                                    <tr>
+                                        <td>@cliente?.Nombre</td>
+                                        <td>@libro?.Titulo</td>
+                                        <td>@v.Fecha.ToShortDateString()</td>
+                                        <td>@v.Cantidad</td>
+                                        <td>@string.Format("{0:C}", libro?.Precio ?? 0)</td>
+                                        <td>@string.Format("{0:C}", (libro?.Precio ?? 0) * v.Cantidad)</td>
+                                        <td>
+                                            <button class="btn btn-outline-primary me-2" @onclick="() => Editar(v.Id)">✏️</button>
+                                            <button class="btn btn-outline-danger" @onclick="() => Eliminar(v.Id)">🗑️</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
-    private List<Venta>? _ventas;
+    List<Venta> ventas = new();
+    List<Libro> libros = new();
+    List<Cliente> clientes = new();
+    string error = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        _ventas = (await _repositorioVentas.ObtenerTodosAsync()).ToList();
+        ventas = (await _repositorioVentas.ObtenerTodosAsync()).ToList();
+        libros = (await _repositorioLibros.ObtenerTodosAsync()).ToList();
+        clientes = (await _repositorioClientes.ObtenerTodosAsync()).ToList();
     }
 
     void Editar(int id) => _navigationManager.NavigateTo($"/ventasform/{id}");
 
     async Task Eliminar(int id)
     {
-        await _repositorioVentas.EliminarAsync(id);
-        _ventas = (await _repositorioVentas.ObtenerTodosAsync()).ToList();
+        try
+        {
+            await _repositorioVentas.EliminarAsync(id);
+            ventas = (await _repositorioVentas.ObtenerTodosAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
     }
 }

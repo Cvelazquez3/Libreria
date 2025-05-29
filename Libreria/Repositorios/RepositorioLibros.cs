@@ -39,11 +39,16 @@ namespace Libreria.Repositorios
         public async Task EliminarAsync(int id)
         {
             var libro = await _context.Libros.FindAsync(id);
-            if (libro is not null)
-            {
-                _context.Libros.Remove(libro);
-                await _context.SaveChangesAsync();
-            }
+
+            if (libro == null)
+                throw new Exception("Libro no encontrado");
+
+            if (libro.Cantidad > 0)
+                throw new Exception("No se puede eliminar un libro con unidades en stock");
+
+            _context.Libros.Remove(libro);
+            await _context.SaveChangesAsync();
         }
+
     }
 }

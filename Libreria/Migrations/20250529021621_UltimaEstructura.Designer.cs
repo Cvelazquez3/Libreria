@@ -4,6 +4,7 @@ using Libreria.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Libreria.Migrations
 {
     [DbContext(typeof(BDLibreriaDBContext))]
-    partial class BDLibreriaDBContextModelSnapshot : ModelSnapshot
+    [Migration("20250529021621_UltimaEstructura")]
+    partial class UltimaEstructura
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -60,7 +63,7 @@ namespace Libreria.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("Precio")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<string>("Titulo")
                         .IsRequired()
@@ -109,7 +112,7 @@ namespace Libreria.Migrations
                         .IsRequired();
 
                     b.HasOne("Libreria.Data.Libro", "Libro")
-                        .WithMany()
+                        .WithMany("Ventas")
                         .HasForeignKey("LibroId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -117,6 +120,11 @@ namespace Libreria.Migrations
                     b.Navigation("Cliente");
 
                     b.Navigation("Libro");
+                });
+
+            modelBuilder.Entity("Libreria.Data.Libro", b =>
+                {
+                    b.Navigation("Ventas");
                 });
 #pragma warning restore 612, 618
         }

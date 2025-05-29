@@ -14,7 +14,7 @@ namespace Libreria.Repositorios
             _context = context;
         }
 
-        public async Task<IEnumerable<Cliente>> ObtenerTodosAsync()
+        public async Task<List<Cliente>> ObtenerTodosAsync()
         {
             return await _context.Clientes.ToListAsync();
         }
@@ -24,7 +24,7 @@ namespace Libreria.Repositorios
             return await _context.Clientes.FindAsync(id);
         }
 
-        public async Task AgregarAsync(Cliente cliente)
+        public async Task AgregarAsync(Cliente cliente) // 👈 ESTE MÉTODO
         {
             _context.Clientes.Add(cliente);
             await _context.SaveChangesAsync();
@@ -39,11 +39,12 @@ namespace Libreria.Repositorios
         public async Task EliminarAsync(int id)
         {
             var cliente = await _context.Clientes.FindAsync(id);
-            if (cliente is not null)
+            if (cliente != null)
             {
                 _context.Clientes.Remove(cliente);
                 await _context.SaveChangesAsync();
             }
         }
     }
+
 }

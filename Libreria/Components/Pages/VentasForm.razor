@@ -5,44 +5,69 @@
 @inject IRepositorioLibros _repositorioLibros
 @inject NavigationManager _navigationManager
 
-<PageTitle>Formulario Venta</PageTitle>
+<PageTitle>Registrar Venta</PageTitle>
 
-<h3>@(venta.Id == 0 ? "Registrar Venta" : "Editar Venta")</h3>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0">@((venta.Id == 0) ? "Registrar Venta" : "Editar Venta")</h4>
+                </div>
+                <div class="card-body">
 
-<EditForm Model="venta" OnValidSubmit="Guardar">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="alert alert-danger">@error</div>
+                    }
 
-    <div class="mb-3">
-        <label>Cliente</label>
-        <InputSelect class="form-control" @bind-Value="venta.ClienteId">
-            <option value="">Seleccione un cliente</option>
-            @foreach (var c in clientes)
-            {
-                <option value="@c.Id">@c.Nombre</option>
-            }
-        </InputSelect>
+                    <EditForm Model="venta" OnValidSubmit="Guardar">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="mb-3">
+                            <label class="form-label">Cliente</label>
+                            <InputSelect class="form-control" @bind-Value="venta.ClienteId">
+                                <option value="">Seleccione un cliente</option>
+                                @foreach (var c in clientes)
+                                {
+                                    <option value="@c.Id">@c.Nombre</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Libro</label>
+                            <InputSelect class="form-control" @bind-Value="venta.LibroId" @onchange="ActualizarLibro">
+                                <option value="">Seleccione un libro</option>
+                                @foreach (var l in libros)
+                                {
+                                    <option value="@l.Id">@l.Titulo (@l.Cantidad disponibles)</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Cantidad a vender</label>
+                            <InputNumber class="form-control" @bind-Value="venta.Cantidad" placeholder="Ej: 1" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Fecha de venta</label>
+                            <InputDate class="form-control" @bind-Value="venta.Fecha" />
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button class="btn btn-success" type="submit">Guardar</button>
+                            <button class="btn btn-secondary" type="button" @onclick="Volver">Cancelar</button>
+                        </div>
+                    </EditForm>
+
+                </div>
+            </div>
+        </div>
     </div>
-
-    <div class="mb-3">
-        <label>Libro</label>
-        <InputSelect class="form-control" @bind-Value="venta.LibroId">
-            <option value="">Seleccione un libro</option>
-            @foreach (var l in libros)
-            {
-                <option value="@l.Id">@l.Titulo</option>
-            }
-        </InputSelect>
-    </div>
-
-    <div class="mb-3">
-        <label>Fecha</label>
-        <InputDate class="form-control" @bind-Value="venta.Fecha" />
-    </div>
-
-    <button class="btn btn-success">Guardar</button>
-    <button class="btn btn-secondary" @onclick="Volver">Cancelar</button>
-</EditForm>
+</div>
 
 @code {
     [Parameter] public int? Id { get; set; }
@@ -50,6 +75,8 @@
     Venta venta = new();
     List<Cliente> clientes = new();
     List<Libro> libros = new();
+    decimal precioUnitario = 0;
+    string error = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -58,9 +85,14 @@
 
         if (Id.HasValue)
         {
-            var encontrado = await _repositorioVentas.ObtenerPorIdAsync(Id.Value);
-            if (encontrado != null)
-                venta = encontrado;
+            var encontrada = await _repositorioVentas.ObtenerPorIdAsync(Id.Value);
+            if (encontrada != null)
+            {
+                venta = encontrada;
+                var libroSeleccionado = libros.FirstOrDefault(l => l.Id == venta.LibroId);
+                if (libroSeleccionado != null)
+                    precioUnitario = libroSeleccionado.Precio;
+            }
         }
         else
         {
@@ -68,14 +100,59 @@
         }
     }
 
+    async Task ActualizarLibro(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int libroId))
+        {
+            var libro = libros.FirstOrDefault(l => l.Id == libroId);
+            if (libro != null)
+            {
+                precioUnitario = libro.Precio;
+                venta.LibroId = libro.Id;
+            }
+        }
+    }
+
     async Task Guardar()
     {
-        if (venta.Id == 0)
-            await _repositorioVentas.AgregarAsync(venta);
-        else
-            await _repositorioVentas.ActualizarAsync(venta);
+        try
+        {
+            if (venta.ClienteId == 0 || venta.LibroId == 0)
+            {
+                error = "Todos los campos son obligatorios.";
+                return;
+            }
 
-        Volver();
+            var libro = libros.FirstOrDefault(l => l.Id == venta.LibroId);
+            if (libro == null)
+            {
+                error = "Libro no válido.";
+                return;
+            }
+
+            if (venta.Cantidad <= 0)
+            {
+                error = "La cantidad debe ser mayor a cero.";
+                return;
+            }
+
+            if (venta.Cantidad > libro.Cantidad)
+            {
+                error = $"Solo hay {libro.Cantidad} unidades disponibles del libro seleccionado.";
+                return;
+            }
+
+            if (venta.Id == 0)
+                await _repositorioVentas.AgregarAsync(venta);
+            else
+                await _repositorioVentas.ActualizarAsync(venta);
+
+            Volver();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
     }
 
     void Volver() => _navigationManager.NavigateTo("/ventas");
